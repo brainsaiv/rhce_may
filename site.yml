@@ -23,13 +23,50 @@
   become: true
   tasks:
 
-    - name: install apache on web servers
+    - name: install apache on web servers (ubuntu)
       tags: apache,ubuntu
       ansible.builtin.apt:
         name:
           - apache2
           - libapache2-mod-php
       when: ansible_distribution == "Ubuntu"
+
+    - name: install apache on web servers (centos)
+      tags: apache,centos
+      ansible.builtin.dnf:
+        name:
+          - httpd
+      when: ansible_distribution == "CentOS"
+
+    - name: ensure apache is running (ubuntu)
+      tags: apache,ubuntu
+      ansible.builtin.service:
+        name: apache2
+        state: started
+      when: ansible_distribution == "Ubuntu"
+
+    - name: ensure apache is running (centos)
+      tags: apache,centos
+      ansible.builtin.service:
+        name: httpd
+        state: started
+      when: ansible_distribution == "CentOS"
+
+    - name: change email address for admin
+      tags: apache,centos
+      ansible.builtin.lineinfile:
+        path: /etc/httpd/conf/httpd.conf
+        regexp: '^ServerAdmin'
+        line: ServerAdmin brainsaivmultimedia@satexas.net
+      when: ansible_distribution == "CentOS"
+      register: httpd
+
+    - name: restart httpd (centos)
+      tags: apache,centos
+      ansible.builtin.service:
+        name: httpd
+        state: restarted
+      when: httpd.changed
 
     - name: copy html file for site
       tags: apache,ubuntu
@@ -45,7 +82,7 @@
   tasks:
 
     - name: install mariadb package on db servers
-      tags: db,centos
+      tags: db,fedora
       ansible.builtin.dnf:
         name: mariadb
         state: latest
